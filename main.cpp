@@ -1,11 +1,13 @@
 #include <iostream> 
-#include <string>   
-#include <vector>
+#include <string>
+#include <vector>   
 
+//struct MatchResult to store the result of a single match
 struct MatchResult {
-    std::string playerX;
-    std::string playerO;
-    std::string winner; // "X", "O", or "Draw"
+    std::string playerX; // name of the player with symbol 'X'
+    std::string playerO; // name of the player with symbol 'O'
+    std::string winner;  // name of the winner, or "Draw"
+    int moves;           // total number of moves played
 };
 
 //class Player to represent each player in the game
@@ -53,10 +55,11 @@ public:
         return false; // invalid move
     }
 
-    int getMoves() const { 
-        return moves; 
+    // getMoves returns the number of moves made so far (moves is private, so we need a getter)
+    int getMoves() const {
+        return moves;
     }
-    
+
     // isFull: the board is full when 9 moves have been made.
     bool isFull() const {
         return moves == 9; 
@@ -119,7 +122,8 @@ private:
 public:
     Game(std::string nameX, std::string nameO) : playerX(nameX, 'X'), playerO(nameO, 'O'), current(&playerX) {} // constructor initializes the players and sets the current player to playerX
 
-    void play() {
+    // play runs a whole match and returns its result (who won and how many moves were played)
+    MatchResult play() {
         while (true) { // repeats the game until draw or win
             board.print(); 
 
@@ -135,11 +139,11 @@ public:
             if (board.checkWinner((*current).getSymbol())) { 
                 board.print();
                 std::cout << (*current).getName() << " has won!\n";
-                break; 
+                return MatchResult{playerX.getName(), playerO.getName(), (*current).getName(), board.getMoves()}; // exit play() with the result 
             } else if (board.isFull()) {  
                 board.print();
                 std::cout << "Draw!\n";
-                break; 
+                return MatchResult{playerX.getName(), playerO.getName(), "Draw", board.getMoves()}; // no winner: "Draw" 
             }
             switchTurn();
         }
@@ -154,8 +158,26 @@ int main() {
     std::cout << "Name of player O: ";
     std::cin >> name_O; //input the name of player O
 
-    Game game(name_X, name_O); 
-    game.play();             
+    std::vector<MatchResult> results; // stores the result of every match played
+    char again;                       // answer to "Play again?"
+
+    do {
+        Game game(name_X, name_O);      // a new Game for every match: the constructor creates a new empty Board
+        results.push_back(game.play()); // play() returns a MatchResult, push_back adds it to the end of the vector
+
+        std::cout << "Play again? (y/n): ";
+        std::cin >> again;
+        std::cin.ignore(10000, '\n'); // ignore the rest of the line
+    } while (again == 'y' || again == 'Y'); // the do-while always plays at least one match
+
+    // temporary summary, to check that the vector contains the matches
+    std::cout << "\nMatches played: " << results.size() << "\n";
+    int n = 1; // match number
+    for (const MatchResult& r : results) { // r is a read-only reference to each element (no copy)
+        std::cout << n << ") " << r.playerX << " vs " << r.playerO
+                  << " -> winner: " << r.winner << " (" << r.moves << " moves)\n";
+        n++;
+    }
 
     return 0; 
 }
